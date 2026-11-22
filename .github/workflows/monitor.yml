@@ -1,0 +1,38 @@
+name: BookMyShow 20-Min Check
+
+on:
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Playwright and Requests
+        run: |
+          pip install playwright requests
+          playwright install chromium
+
+      - name: Check BookMyShow
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python check_tickets.py
+
+      - name: Save lock file after alert
+        run: |
+          if [ -f alert_sent.txt ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add alert_sent.txt
+            git commit -m "Mark alert as sent"
+            git push
+          fi
